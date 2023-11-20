@@ -1,0 +1,124 @@
+import pygame
+import sys
+
+# 初始
+pygame.init()
+
+# 定义棋盘大小和参数
+BOARD_SIZE = 15
+CELL_SIZE = 40
+BOARD_WIDTH = CELL_SIZE * BOARD_SIZE
+BOARD_HEIGHT = CELL_SIZE * BOARD_SIZE
+BOARD_COLOR = (255, 255, 255)  # 白色
+LINE_COLOR = (0, 0, 0)  # 黑色
+HIGHLIGHT_COLOR = (255, 0, 0)  # 红色，用于高亮显示胜利的五子连珠
+
+# 初始化棋盘
+board = [['.' for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
+
+# 创建窗口
+screen = pygame.display.set_mode((BOARD_WIDTH, BOARD_HEIGHT))
+pygame.display.set_caption('五子棋')
+
+def draw_board():
+    """绘制棋盘"""
+    screen.fill(BOARD_COLOR)
+    for row in range(BOARD_SIZE):
+        for col in range(BOARD_SIZE):
+            rect = pygame.Rect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+            pygame.draw.rect(screen, BOARD_COLOR, rect)
+            if board[row][col] != '.':
+                color = (0, 0, 0) if board[row][col] == 'X' else (255, 255, 255)
+                pygame.draw.circle(screen, color, rect.center, CELL_SIZE // 2 - 4)
+            pygame.draw.rect(screen, LINE_COLOR, rect, 1)
+def draw_circle(center):
+    """绘制圆圈表示一方的棋子"""
+    pygame.draw.circle(screen, (0, 0, 0), center, CELL_SIZE // 2 - 4, 1)
+
+def draw_cross(center):
+    """绘制叉号表示另一方的棋子"""
+    offset = CELL_SIZE // 2 - 4
+    pygame.draw.line(screen, (0, 0, 0), (center[0] - offset, center[1] - offset), (center[0] + offset, center[1] + offset), 2)
+    pygame.draw.line(screen, (0, 0, 0), (center[0] + offset, center[1] - offset), (center[0] - offset, center[1] + offset), 2)
+
+def draw_board():
+    """绘制棋盘"""
+    screen.fill(BOARD_COLOR)
+    for row in range(BOARD_SIZE):
+        for col in range(BOARD_SIZE):
+            rect = pygame.Rect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+            pygame.draw.rect(screen, BOARD_COLOR, rect)
+            if board[row][col] == 'X':
+                draw_cross(rect.center)
+            elif board[row][col] == 'O':
+                draw_circle(rect.center)
+            pygame.draw.rect(screen, LINE_COLOR, rect, 1)
+def get_cell_from_mouse(pos):
+    """根据鼠标位置获取棋盘上的单元格坐标"""
+    x, y = pos
+    row = y // CELL_SIZE
+    col = x // CELL_SIZE
+    return row, col
+
+def is_valid_move(x, y):
+    """判断落子是否有效"""
+    return 0 <= x < BOARD_SIZE and 0 <= y < BOARD_SIZE and board[x][y] == '.'
+
+def make_move(x, y, player):
+    """在棋盘上放置棋子"""
+    if is_valid_move(x, y):
+        board[x][y] = player
+        return True
+    return False
+
+def is_winner(x, y, player):
+    """判断是否获胜"""
+    directions = [(1, 0), (0, 1), (1, 1), (1, -1)]  # 横、竖、两个对角线方向
+    for dx, dy in directions:
+        count = 1  # 包括当前落子
+        # 检查正方向
+        for i in range(1, 5):
+            nx, ny = x + dx * i, y + dy * i
+            if 0 <= nx < BOARD_SIZE and 0 <= ny < BOARD_SIZE and board[nx][ny] == player:
+                count += 1
+            else:
+                break
+        # 检查反方向
+        for i in range(1, 5):
+            nx, ny = x - dx * i, y - dy * i
+            if 0 <= nx < BOARD_SIZE and 0 <= ny < BOARD_SIZE and board[nx][ny] == player:
+                count += 1
+            else:
+                break
+        # 检查是否有五子连珠
+        if count >= 5:
+            return True
+    return False
+
+def gomoku_game():
+    """五子棋游戏主函数"""
+    players = ['X', 'O']  # 两个玩家分别使用X和O表示
+    turn = 0  # 轮到哪个玩家
+    game_over = False
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN and not game_over:
+                mouse_pos = pygame.mouse.get_pos()
+                x, y = get_cell_from_mouse(mouse_pos)
+                if make_move(x, y, players[turn]):
+                    if is_winner(x, y, players[turn]):
+                        print(f'Player {players[turn]} wins!')
+                        game_over = True
+                    turn = 1 - turn  # 切换玩家
+                else:
+                    print('Invalid move, try again.')
+        
+        draw_board()
+        pygame.display.flip()
+
+# 开始游戏
+gomoku_game()
