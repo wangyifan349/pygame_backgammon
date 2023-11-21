@@ -135,20 +135,78 @@ def compare_cards(last_cards, current_cards):
     # 如果两方出的牌型相同，则比较牌型的大小
     if current_type == last_type and len(current_cards) == len(last_cards):
         return current_value > last_value
-
     return False
-
-# 主程序
 def main():
     players = ['玩家A', '玩家B', '玩家C']
+    pass_count = 0  # 用于跟踪连续过牌的次数
     deck = init_deck()
     landlord_cards, farmer1_cards, farmer2_cards, bottom_cards = deal_cards(deck)
     landlord = bid_landlord(players)
     if landlord:
         print(f"{landlord} 成为地主！")
-        print(f"地主牌：{landlord_cards + bottom_cards}")
-        print(f"农民1牌：{farmer1_cards}")
-        print(f"农民2牌：{farmer2_cards}")
+        # 分发底牌给地主
+        if landlord == '玩家A':
+            landlord_cards += bottom_cards
+        elif landlord == '玩家B':
+            farmer1_cards += bottom_cards
+        else:
+            farmer2_cards += bottom_cards
 
+    # 初始化玩家手牌
+    player_hands = {
+        '玩家A': landlord_cards,
+        '玩家B': farmer1_cards,
+        '玩家C': farmer2_cards
+    }
+
+    # 打印玩家手牌
+    for player, cards in player_hands.items():
+        print(f"{player}的手牌：{cards}")
+
+    # 游戏开始
+    turn = landlord  # 地主先出牌
+    last_played_cards = []
+    while True:
+        # 对手牌排序
+        hand.sort(key=lambda x: get_card_value(x))
+        print(f"你的手牌：{' '.join(hand)}")
+        card_input = input("请选择出牌（输入牌的字符串，用空格分隔），或输入'pass'过牌：").strip()
+        # 检查玩家是否选择过牌
+        if card_input.lower() == 'pass':
+            if pass_count < 2:  # 如果前两个玩家没有都过牌，可以过牌
+                pass_count += 1
+                print(f"{turn}选择过牌。")
+            else:
+                print("连续两个玩家已经过牌，您必须出牌。")
+                continue
+        else:
+            try:
+                current_cards = card_input.split()
+                # 验证选择的牌是否在手牌中
+                if all(hand.count(card) >= current_cards.count(card) for card in current_cards):
+                    # 验证出牌是否符合规则
+                    if (not last_played_cards or compare_cards(last_played_cards, current_cards)):
+                        # 出牌有效，移除手牌
+                        for card in current_cards:
+                            hand.remove(card)
+                        last_played_cards = current_cards
+                        pass_count = 0  # 重置过牌计数
+                        print(f"{turn}出牌：{' '.join(current_cards)}")
+                        # 检查是否有玩家赢了游戏
+                        if not hand:
+                            print(f"{turn}赢得了游戏！")
+                            break
+                    else:
+                        print("无效的出牌，请重新选择！")
+                        continue
+                else:
+                    print("选择的牌不在你的手牌中，请重新选择！")
+                    continue
+            except Exception as e:
+                print("出现错误：", e)
+                print("请按正确格式输入牌！")
+                continue
+        # 轮到下一个玩家
+        turn = players[(players.index(turn) + 1) % 3]
 if __name__ == "__main__":
     main()
